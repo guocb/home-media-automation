@@ -55,12 +55,13 @@ def process_top_level_files(root_dir, files, flag, next_step):
 
 
 def scan_dir(directory, flag, next_step):
+    ignored_dirs = ['ThunderDB']
     rc = False
     for root_dir, dirs, files in os.walk(directory):
         rc |= process_top_level_files(root_dir, files, flag, next_step)
 
         # process sub dirs
-        for d in dirs[:]:
+        for d in [d_ for d_ in dirs if d_ not in ignored_dirs]:
             if not download_in_process(root_dir, d, flag):
                 next_step(os.path.join(root_dir, d))
                 rc = True
