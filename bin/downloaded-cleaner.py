@@ -61,7 +61,10 @@ def scan_dir(directory, flag, next_step):
         rc |= process_top_level_files(root_dir, files, flag, next_step)
 
         # process sub dirs
-        for d in [d_ for d_ in dirs if d_ not in ignored_dirs]:
+        for d in ignored_dirs:
+            dirs.remove(d)
+
+        for d in dirs[:]:
             if not download_in_process(root_dir, d, flag):
                 next_step(os.path.join(root_dir, d))
                 rc = True
