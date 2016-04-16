@@ -62,7 +62,8 @@ def scan_dir(directory, flag, next_step):
 
         # process sub dirs
         for d in ignored_dirs:
-            dirs.remove(d)
+            if d in dirs:
+                dirs.remove(d)
 
         for d in dirs[:]:
             if not download_in_process(root_dir, d, flag):
