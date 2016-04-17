@@ -16,12 +16,11 @@ def analyze(url):
     m = re.search('var thunder_url = "(.+?)";', html)
     rc = {}
     if not m:
-        return json.dumps({'result': 'error',
-                           'message': 'Cannot find xunlei link in the URL!'})
+        return {'result': 'error',
+                'message': 'Cannot find xunlei link in the URL!'}
 
-    return json.dumps({'result': 'OK',
-                       'message': 'found the link',
-                       'link': m.group(1).decode('gbk').encode('utf-8')})
+    return {'result': 'OK', 'message': 'found the link',
+            'link': m.group(1).decode('gbk').encode('utf-8')}
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description=__doc__)
@@ -31,7 +30,7 @@ def parse_args(argv):
 
 def main(argv):
     opts = parse_args(argv)
-    print analyze(opts.url)
+    print json.dumps(analyze(opts.url))
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv[1:]))
