@@ -4,7 +4,7 @@
 import os
 import sys
 
-from flask import Flask, jsonify, request
+from flask import Flask, abort, jsonify, request
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from lib import analyze_bt5156_url
@@ -12,10 +12,7 @@ from lib import analyze_bt5156_url
 
 app = Flask(__name__)
 
-api = 'analyze'
-ver = '0.1'
-
-def gen_url(api='api', ver='0.1', task='analyze'):
+def gen_url(api='api', ver='v0.1', task='analyze'):
     return '/%s/%s/%s' % (api, ver, task)
 
 @app.route(gen_url(), methods=['POST'])
