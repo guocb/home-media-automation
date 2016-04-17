@@ -16,10 +16,12 @@ def analyze(url):
     m = re.search('var thunder_url = "(.+?)";', html)
     rc = {}
     if not m:
-        return json.dumps({'message': 'Cannot find xunlei link in the URL!'})
+        return json.dumps({'result': 'error',
+                           'message': 'Cannot find xunlei link in the URL!'})
 
-    return json.dumps({'message': 'OK', 'link':
-                       m.group(1).decode('gbk').encode('utf-8')})
+    return json.dumps({'result': 'OK',
+                       'message': 'found the link',
+                       'link': m.group(1).decode('gbk').encode('utf-8')})
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(description=__doc__)
