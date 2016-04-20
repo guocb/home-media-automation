@@ -15,6 +15,10 @@ app = Flask(__name__)
 def gen_url(api='api', ver='v0.1', task='analyze'):
     return '/%s/%s/%s' % (api, ver, task)
 
+@app.route('/')
+def index():
+    return 'This is the index page for the API'
+
 @app.route(gen_url(), methods=['POST'])
 def do_analyze():
     if not request.json or 'url' not in request.json:
