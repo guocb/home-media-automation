@@ -11,6 +11,7 @@ import urllib
 
 from contextlib import closing
 
+
 def parse_args(argv):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -32,10 +33,10 @@ def parse_args(argv):
     return parser.parse_args(argv)
 
 
-def download_in_process(root_dir, subdir, flag):
+def is_processing(root_dir, subdir, flag):
     ''' check any donwloading flag file is in the sub directory '''
-    return any([f.endswith(flag) for f in
-                os.listdir(os.path.join(root_dir, subdir))])
+    return any([fn.endswith(fg) for fg in [flag, '.transcoding']
+                for fn in os.listdir(os.path.join(root_dir, subdir))])
 
 
 def process_top_level_files(root_dir, files, flag, next_step):
@@ -48,7 +49,7 @@ def process_top_level_files(root_dir, files, flag, next_step):
         files.remove(f_flag)
 
     for f in files:
-        next_step(os.path.join(root_dir, f))
+        next_step(os.path.join(root_dir, f), is_dir=False)
         rc = True
 
     return rc
@@ -66,19 +67,40 @@ def scan_dir(directory, flag, next_step):
                 dirs.remove(d)
 
         for d in dirs[:]:
-            if not download_in_process(root_dir, d, flag):
-                next_step(os.path.join(root_dir, d))
-                rc = True
+            if not is_processing(root_dir, d, flag):
+                rc |= next_step(os.path.join(root_dir, d), is_dir=True)
             dirs.remove(d)
 
     return rc
 
 
+def transcode(file_name):
+    output = '%s.mp4' % os.path.splitext(file_name)[0]
+    with open('%s.transcoding' % file_name, 'w'):
+        pass
+    with open('/var/run/transcoder-q', 'w') as f:
+        f.writelines([
+            "ffmpeg -i '%s' -c:v libx264 -preset veryfast -crf 18 -c:a copy "
+            "-ch 2 -strict -2 '%s'\n" % (file_name, output),
+            "rm -f '%s'\n" % file_name,
+            "rm -f '%s.transcoding'\n" % file_name])
+
+
 def how_to_process(library_dir, dry_run=False):
-    def func(file_or_dir):
-        print 'Moving %s' % file_or_dir
-        if not dry_run:
-            shutil.move(file_or_dir, library_dir)
+    def func(file_or_dir, is_dir=False):
+        need_transcoding = lambda f: f.endswith('.rmvb')
+        files = ([os.path.join(file_or_dir, f)
+                  for f in os.listdir(file_or_dir)]
+                 if is_dir else [file_or_dir])
+        rmvbs = [f for f in files if need_transcoding(f)]
+        for rmvb in rmvbs:
+            transcode(rmvb)
+        if not rmvbs:
+            print 'Moving %s' % file_or_dir
+            if not dry_run:
+                shutil.move(file_or_dir, library_dir)
+                return True
+        return False
     return func
 
 

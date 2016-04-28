@@ -8,7 +8,7 @@ import sys
 import logging
 
 from logging.handlers import RotatingFileHandler
-from subprocess import check_output
+from subprocess import check_output, STDOUT, CalledProcessError
 
 
 def parse_args(argv):
@@ -43,8 +43,11 @@ def main(argv):
             for cmd in pipe_in:
                 cmd = 'nice -n 19 %s' % cmd
                 logger.info('Processing: %s', cmd)
-                output = check_output(cmd.split())
-                logger.debug('===\n%s', output)
+                try:
+                    output = check_output(cmd, stderr=STDOUT, shell=True)
+                    logger.debug('===\n%s', output)
+                except CalledProcessError as err:
+                    logger.error(str(err))
                 logger.info('Done: %s', cmd)
 
 
