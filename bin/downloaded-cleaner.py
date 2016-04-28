@@ -80,7 +80,8 @@ def transcode(file_name):
         pass
     with open('/var/run/transcoder-q', 'w') as f:
         f.writelines([
-            "ffmpeg -i '%s' -c:v libx264 -preset veryfast -crf 18 -c:a copy "
+            "ffmpeg -i '%s' -c:v libx264 -preset veryfast -crf 18 "
+            "-maxrate 2500k -c:a copy "
             "-ch 2 -strict -2 '%s'\n" % (file_name, output),
             "rm -f '%s'\n" % file_name,
             "rm -f '%s.transcoding'\n" % file_name])
