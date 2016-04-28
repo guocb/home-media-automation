@@ -41,7 +41,7 @@ def main(argv):
 
         with open(opts.pipe) as pipe_in:
             for cmd in pipe_in:
-                cmd = cmd.strip()
+                cmd = 'nice -n 19 %s' % cmd
                 logger.info('Processing: %s', cmd)
                 output = check_output(cmd.split())
                 logger.debug('===\n%s', output)
