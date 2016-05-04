@@ -10,6 +10,7 @@ import sys
 import urllib
 
 from contextlib import closing
+from subprocess import Popen
 
 
 def parse_args(argv):
@@ -43,14 +44,20 @@ def process_top_level_files(root_dir, files, flag, next_step):
     ''' Some downloaded media has no folder with '''
     rc = False
 
-    flag_files = [f for f in files if f.endswith(flag)]
-    for f, f_flag in [(f_, f_[:-len(flag)]) for f_ in flag_files]:
-        files.remove(f)
-        files.remove(f_flag)
+    for the_flag in [flag, '.transcoding']:
+        flag_files = [f for f in files if f.endswith(the_flag)]
+        for f, f_flag in [(f_, f_[:-len(flag)]) for f_ in flag_files]:
+            try:
+                files.remove(f)
+            except ValueError:
+                pass
+            try:
+                files.remove(f_flag)
+            except ValueError:
+                pass
 
     for f in files:
-        next_step(os.path.join(root_dir, f), is_dir=False)
-        rc = True
+        rc |= next_step(os.path.join(root_dir, f), is_dir=False)
 
     return rc
 
@@ -76,15 +83,26 @@ def scan_dir(directory, flag, next_step):
 
 def transcode(file_name):
     output = '%s.mp4' % os.path.splitext(file_name)[0]
+    flag_file = '%s.transcoding' % file_name
+    if os.path.exists(flag_file):
+        print 'transcoding is running'
+        return
     with open('%s.transcoding' % file_name, 'w'):
         pass
-    with open('/var/run/transcoder-q', 'w') as f:
-        f.writelines([
-            "ffmpeg -i '%s' -c:v libx264 -preset veryfast -crf 18 "
-            "-maxrate 2500k -c:a copy "
-            "-ch 2 -strict -2 '%s'\n" % (file_name, output),
-            "rm -f '%s'\n" % file_name,
-            "rm -f '%s.transcoding'\n" % file_name])
+    cmd = (
+        "(flock 20;"
+        "    (set -x;"
+        "         nice -n 19 ffmpeg -i '%(input)s' -c:v libx264 -preset "
+        "             veryfast -crf 19 -c:a copy -ch 2 -strict -2 "
+        "             '%(output)s' && "
+        "         rm -f '%(output)s' && "
+        "         rm -f '%(output)s.transcoding'"
+        "    ) >> %(log)s 2>&1"
+        ") 20>/var/run/transcoding.lock"
+    ) % {'input': file_name, 'output': output,
+         'log': '/var/log/transcoding.log'}
+    proc = Popen(cmd, shell=True)
+    print 'transcoding process created with id=%s' % proc.pid
 
 
 def how_to_process(library_dir, dry_run=False):
